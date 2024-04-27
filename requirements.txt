@@ -7,3 +7,4 @@ tensorboardX
 pyrealsense2
 Pillow
 transformers
+torchsummary

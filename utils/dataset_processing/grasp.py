@@ -45,9 +45,13 @@ class GraspRectangles:
         """
         # Fuck yeah python.
         if hasattr(GraspRectangle, attr) and callable(getattr(GraspRectangle, attr)):
-            return lambda *args, **kwargs: list(map(lambda gr: getattr(gr, attr)(*args, **kwargs), self.grs))
+            return lambda *args, **kwargs: list(
+                map(lambda gr: getattr(gr, attr)(*args, **kwargs), self.grs)
+            )
         else:
-            raise AttributeError("Couldn't find function %s in BoundingBoxes or BoundingBox" % attr)
+            raise AttributeError(
+                "Couldn't find function %s in BoundingBoxes or BoundingBox" % attr
+            )
 
     @classmethod
     def load_from_array(cls, arr):
@@ -81,19 +85,21 @@ class GraspRectangles:
                     break  # EOF
                 p1, p2, p3 = f.readline(), f.readline(), f.readline()
                 try:
-                    gr = np.array([
-                        _gr_text_to_no(p0),
-                        _gr_text_to_no(p1),
-                        _gr_text_to_no(p2),
-                        _gr_text_to_no(p3)
-                    ])
+                    gr = np.array(
+                        [
+                            _gr_text_to_no(p0),
+                            _gr_text_to_no(p1),
+                            _gr_text_to_no(p2),
+                            _gr_text_to_no(p3),
+                        ]
+                    )
 
                     grs.append(GraspRectangle(gr))
 
                 except ValueError:
                     # Some files contain weird values.
                     continue
-        
+
         return cls(grs)
 
     @classmethod
@@ -112,19 +118,21 @@ class GraspRectangles:
                     break  # EOF
                 p1, p2, p3 = f.readline(), f.readline(), f.readline()
                 try:
-                    gr = np.array([
-                        _gr_text_to_no(p0),
-                        _gr_text_to_no(p1),
-                        _gr_text_to_no(p2),
-                        _gr_text_to_no(p3)
-                    ])
+                    gr = np.array(
+                        [
+                            _gr_text_to_no(p0),
+                            _gr_text_to_no(p1),
+                            _gr_text_to_no(p2),
+                            _gr_text_to_no(p3),
+                        ]
+                    )
 
                     grs.append(GraspRectangle(gr))
 
                 except ValueError:
                     # Some files contain weird values.
                     continue
-        
+
         return cls(grs)
 
     @classmethod
@@ -139,21 +147,25 @@ class GraspRectangles:
             grasp_lines = f.readlines()
             for grasp_line in grasp_lines:
                 # x1, y1, x2, y2, x3, y3, x4, y4 = list(map(lambda x: int(round(float(x))), grasp_line.split(' ')[:8]))
-                y1, x1, y2, x2, y3, x3, y4, x4 = list(map(lambda x: int(round(float(x))), grasp_line.split(' ')[:8]))
+                y1, x1, y2, x2, y3, x3, y4, x4 = list(
+                    map(lambda x: int(round(float(x))), grasp_line.split(" ")[:8])
+                )
                 try:
-                    gr = np.array([
-                        [x1, y1],
-                        [x2, y2],
-                        [x3, y3],
-                        [x4, y4],
-                    ])
+                    gr = np.array(
+                        [
+                            [x1, y1],
+                            [x2, y2],
+                            [x3, y3],
+                            [x4, y4],
+                        ]
+                    )
 
                     grs.append(GraspRectangle(gr))
 
                 except ValueError:
                     # Some files contain weird values.
                     continue
-        
+
         return cls(grs)
 
     @classmethod
@@ -167,7 +179,7 @@ class GraspRectangles:
         grs = []
         with open(fname) as f:
             for l in f:
-                x, y, theta, w, h = [float(v) for v in l[:-1].split(';')]
+                x, y, theta, w, h = [float(v) for v in l[:-1].split(";")]
                 # index based on row, column (y,x), and the Jacquard dataset's angles are flipped around an axis.
                 grs.append(Grasp(np.array([y, x]), -theta / 180.0 * np.pi, w, h).as_gr)
         grs = cls(grs)
@@ -182,7 +194,7 @@ class GraspRectangles:
         :return: GraspRectangles()
         """
         grs = None
-        with open(fname, 'rb') as f:
+        with open(fname, "rb") as f:
             pos_grasps = torch.load(f)
         # add_fn = fname.replace("positive_grasp", "negative_grasp")
         # with open(fname, 'rb') as f:
@@ -194,7 +206,7 @@ class GraspRectangles:
         grs = cls(grs)
         grs.scale(scale)
         return grs
-    
+
     def append(self, gr):
         """
         Add a grasp rectangle to this GraspRectangles object
@@ -323,7 +335,7 @@ class GraspRectangle:
         """
         dx = self.points[1, 1] - self.points[0, 1]
         dy = self.points[1, 0] - self.points[0, 0]
-        return np.sqrt(dx ** 2 + dy ** 2)
+        return np.sqrt(dx**2 + dy**2)
 
     @property
     def width(self):
@@ -332,7 +344,7 @@ class GraspRectangle:
         """
         dy = self.points[2, 1] - self.points[1, 1]
         dx = self.points[2, 0] - self.points[1, 0]
-        return np.sqrt(dx ** 2 + dy ** 2)
+        return np.sqrt(dx**2 + dy**2)
 
     def polygon_coords(self, shape=None):
         """
@@ -346,7 +358,9 @@ class GraspRectangle:
         :param shape: Output shape
         :return: Indices of pixels within the centre thrid of the grasp rectangle.
         """
-        return Grasp(self.center, self.angle, self.length / 3, self.width).as_gr.polygon_coords(shape)
+        return Grasp(
+            self.center, self.angle, self.length / 3, self.width
+        ).as_gr.polygon_coords(shape)
 
     def iou(self, gr, angle_threshold=np.pi / 6):
         """
@@ -355,7 +369,10 @@ class GraspRectangle:
         :param angle_threshold: Maximum angle difference between GraspRectangles
         :return: IoU between Grasp Rectangles
         """
-        if abs((self.angle - gr.angle + np.pi / 2) % np.pi - np.pi / 2) > angle_threshold:
+        if (
+            abs((self.angle - gr.angle + np.pi / 2) % np.pi - np.pi / 2)
+            > angle_threshold
+        ):
             return 0
 
         rr1, cc1 = self.polygon_coords()
@@ -427,12 +444,7 @@ class GraspRectangle:
         :param factor: Zoom factor
         :param center: Zoom zenter (focus point, e.g. image center)
         """
-        T = np.array(
-            [
-                [1 / factor, 0],
-                [0, 1 / factor]
-            ]
-        )
+        T = np.array([[1 / factor, 0], [0, 1 / factor]])
         c = np.array(center).reshape((1, 2))
         self.points = ((np.dot(T, (self.points - c).T)).T + c).astype(np.int)
 
@@ -444,7 +456,9 @@ class Grasp:
 
     def __init__(self, center, angle, length=60, width=30):
         self.center = center
-        self.angle = angle  # Positive angle means rotate anti-clockwise from horizontal.
+        self.angle = (
+            angle  # Positive angle means rotate anti-clockwise from horizontal.
+        )
         self.length = length
         self.width = width
 
@@ -462,14 +476,16 @@ class Grasp:
         y2 = self.center[0] - self.length / 2 * yo
         x2 = self.center[1] + self.length / 2 * xo
 
-        return GraspRectangle(np.array(
-            [
-                [y1 - self.width / 2 * xo, x1 - self.width / 2 * yo],
-                [y2 - self.width / 2 * xo, x2 - self.width / 2 * yo],
-                [y2 + self.width / 2 * xo, x2 + self.width / 2 * yo],
-                [y1 + self.width / 2 * xo, x1 + self.width / 2 * yo],
-            ]
-        ).astype(np.float))
+        return GraspRectangle(
+            np.array(
+                [
+                    [y1 - self.width / 2 * xo, x1 - self.width / 2 * yo],
+                    [y2 - self.width / 2 * xo, x2 - self.width / 2 * yo],
+                    [y2 + self.width / 2 * xo, x2 + self.width / 2 * yo],
+                    [y1 + self.width / 2 * xo, x1 + self.width / 2 * yo],
+                ]
+            ).astype(np.float64)
+        )
 
     def max_iou(self, grs):
         """
@@ -499,9 +515,13 @@ class Grasp:
         :return: string in Jacquard format
         """
         # Output in jacquard format.
-        return '%0.2f;%0.2f;%0.2f;%0.2f;%0.2f' % (
-            self.center[1] * scale, self.center[0] * scale, -1 * self.angle * 180 / np.pi, self.length * scale,
-            self.width * scale)
+        return "%0.2f;%0.2f;%0.2f;%0.2f;%0.2f" % (
+            self.center[1] * scale,
+            self.center[0] * scale,
+            -1 * self.angle * 180 / np.pi,
+            self.length * scale,
+            self.width * scale,
+        )
 
 
 def detect_grasps(q_img, ang_img, width_img=None, no_grasps=1):
@@ -513,7 +533,9 @@ def detect_grasps(q_img, ang_img, width_img=None, no_grasps=1):
     :param no_grasps: Max number of grasps to return
     :return: list of Grasps
     """
-    local_max = peak_local_max(q_img, min_distance=20, threshold_abs=0.2, num_peaks=no_grasps)
+    local_max = peak_local_max(
+        q_img, min_distance=20, threshold_abs=0.2, num_peaks=no_grasps
+    )
 
     grasps = []
     for grasp_point_array in local_max:
