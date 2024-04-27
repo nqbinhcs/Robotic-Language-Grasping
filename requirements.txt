@@ -1,3 +1,4 @@
+transformers==4.28.1
 numpy==1.23.3
 opencv-python
 matplotlib
@@ -6,5 +7,4 @@ imageio
 tensorboardX
 pyrealsense2
 Pillow
-transformers==4.28.1
 torchsummary
