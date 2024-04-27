@@ -6,3 +6,4 @@ imageio
 tensorboardX
 pyrealsense2
 Pillow
+transformers
