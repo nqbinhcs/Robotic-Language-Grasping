@@ -43,15 +43,9 @@ class GraspAnythingDataset(GraspDatasetBase):
 
         #     self.grasp_files = list(filter(lambda x: x.split('/')[-1].split('.')[0] in idxs, self.grasp_files))
 
-        N = 100
-
         self.grasp_files.sort()
         self.prompt_files.sort()
         self.rgb_files.sort()
-
-        self.grasp_files = self.grasp_files[:N]
-        self.prompt_files = self.prompt_files[:N]
-        self.rgb_files = self.rgb_files[:N]
 
         # self.mask_files.sort()
 
