@@ -6,5 +6,5 @@ imageio
 tensorboardX
 pyrealsense2
 Pillow
-transformers
+transformers==4.28.1
 torchsummary
