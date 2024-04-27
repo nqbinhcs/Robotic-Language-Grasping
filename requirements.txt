@@ -1,0 +1,8 @@
+numpy
+opencv-python
+matplotlib
+scikit-image
+imageio
+tensorboardX
+pyrealsense2
+Pillow
