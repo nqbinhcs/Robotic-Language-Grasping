@@ -503,9 +503,7 @@ def run():
         channel_size=args.channel_size,
     )
 
-    # net.load_state_dict(
-    #     torch.load("weights/model_grasp_anything_state.pth"), strict=False
-    # )
+    # net.load_state_dict(torch.load("weights/mobilevit_s.pt"), strict=False)
 
     net = net.to(device)
     # I want to print number of trainable parameter of net

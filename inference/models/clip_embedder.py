@@ -27,7 +27,7 @@ class CLIPTextEmbedder(nn.Module):
         self,
         version: str = "openai/clip-vit-base-patch16",
         device="cuda:0",
-        max_length: int = 77,
+        max_length: int = 20,
     ):
         """
         :param version: is the model version
