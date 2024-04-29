@@ -1,7 +1,7 @@
 
 # conda activate grasp-anything
 
-python train_network.py --dataset grasp-anything --dataset-path train_data/grasp-anything/seen --network trans_grconvnet --use-instruction --use-depth 0 --batch-size 4 --vis --optim sgd
+python train_network.py --dataset grasp-anything --dataset-path train_data/grasp-anything/seen --network trans_grconvnet --use-instruction --use-depth 0 --batch-size 4 --vis 
 
 # python train_network.py --dataset grasp-anything --dataset-path train_data/grasp-anything/seen --use-depth 0 --batch-size 4 --vis
 

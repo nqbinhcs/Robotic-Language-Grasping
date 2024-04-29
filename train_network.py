@@ -223,9 +223,9 @@ def train(
     batch_idx = 0
     # Use batches per epoch to make training on different sized datasets (cornell/jacquard) more equivalent.
 
-    batches_per_epoch = len(train_data)
+    # batches_per_epoch = len(train_data)
 
-    while batch_idx < batches_per_epoch:
+    while batch_idx <= batches_per_epoch:
         for x, y, didx, rot, zoom in train_data:
             batch_idx += 1
             if batch_idx >= batches_per_epoch:
