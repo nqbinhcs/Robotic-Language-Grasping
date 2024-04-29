@@ -7,20 +7,35 @@ from .mobile_vit import get_model
 
 class RAGT(GraspModel):
 
-    def __init__(self, input_channels=4, output_channels=1, channel_size=18, dropout=False, prob=0.0):
+    def __init__(
+        self,
+        input_channels=4,
+        output_channels=1,
+        channel_size=18,
+        dropout=False,
+        prob=0.0,
+    ):
         super(RAGT, self).__init__()
         self.mobile_vit = get_model()
 
         # Upsampling layers to increase spatial dimensions
         self.upsample_layers = nn.Sequential(
-            nn.Upsample(scale_factor=33, mode='bilinear', align_corners=False),
-            nn.ReLU()
+            nn.Upsample(scale_factor=33, mode="bilinear", align_corners=False),
+            nn.ReLU(),
         )
 
-        self.pos_output = nn.Conv2d(in_channels=channel_size, out_channels=output_channels, kernel_size=2)
-        self.cos_output = nn.Conv2d(in_channels=channel_size, out_channels=output_channels, kernel_size=2)
-        self.sin_output = nn.Conv2d(in_channels=channel_size, out_channels=output_channels, kernel_size=2)
-        self.width_output = nn.Conv2d(in_channels=channel_size, out_channels=output_channels, kernel_size=2)
+        self.pos_output = nn.Conv2d(
+            in_channels=channel_size, out_channels=output_channels, kernel_size=2
+        )
+        self.cos_output = nn.Conv2d(
+            in_channels=channel_size, out_channels=output_channels, kernel_size=2
+        )
+        self.sin_output = nn.Conv2d(
+            in_channels=channel_size, out_channels=output_channels, kernel_size=2
+        )
+        self.width_output = nn.Conv2d(
+            in_channels=channel_size, out_channels=output_channels, kernel_size=2
+        )
 
         self.dropout = dropout
         self.dropout_pos = nn.Dropout(p=prob)
@@ -35,7 +50,7 @@ class RAGT(GraspModel):
     def forward(self, x_in):
         x = self.mobile_vit(x_in)
         x = self.upsample_layers(x)
-        x = x[:,:,:225, :225]
+        x = x[:, :, :225, :225]
 
         if self.dropout:
             pos_output = self.pos_output(self.dropout_pos(x))

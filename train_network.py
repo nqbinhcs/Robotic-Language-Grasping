@@ -19,6 +19,7 @@ from inference.post_process import post_process_output
 from utils.data import get_dataset
 from utils.dataset_processing import evaluation
 from utils.visualisation.gridshow import gridshow
+from utils.visualisation.plot import draw_grasps_on_image, save_results_grasp
 
 
 def parse_args():
@@ -79,6 +80,13 @@ def parse_args():
     parser.add_argument(
         "--ds-shuffle", action="store_true", default=False, help="Shuffle the dataset"
     )
+    parser.add_argument(
+        "--ds-easy-setting",
+        action="store_true",
+        default=False,
+        help="Easy setting without augmentation",
+    )
+
     parser.add_argument(
         "--ds-rotate",
         type=float,
@@ -215,8 +223,10 @@ def train(
     batch_idx = 0
     # Use batches per epoch to make training on different sized datasets (cornell/jacquard) more equivalent.
 
-    while batch_idx <= batches_per_epoch:
-        for x, y, _, _, _ in train_data:
+    batches_per_epoch = len(train_data)
+
+    while batch_idx < batches_per_epoch:
+        for x, y, didx, rot, zoom in train_data:
             batch_idx += 1
             if batch_idx >= batches_per_epoch:
                 break
@@ -251,39 +261,96 @@ def train(
 
             # Display the images
             if vis and batch_idx % 100 == 0:
-                imgs = []
-                n_img = min(4, x[0].shape[0])
-                for idx in range(n_img):
-                    imgs.extend(
-                        [x[0][idx,].numpy().squeeze()[[2, 1, 0], :, :]]
-                        + [yi[idx,].numpy().squeeze() for yi in y]
-                        + [x[0][idx,].numpy().squeeze()[[2, 1, 0], :, :]]
-                        + [
-                            pc[idx,].detach().cpu().numpy().squeeze()
-                            for pc in lossd["pred"].values()
-                        ]
-                    )
 
-                path_to_save = os.path.join(
-                    dir_vis, "train_vis_epoch_{}_batch_{}.png".format(epoch, batch_idx)
-                )
-                gridshow(
-                    "Display",
-                    imgs,
-                    [
-                        (xc[0].min().item(), xc[0].max().item()),
-                        (0.0, 1.0),
-                        (0.0, 1.0),
-                        (-1.0, 1.0),
-                        (0.0, 1.0),
-                    ]
-                    * 2
-                    * n_img,
-                    [cv2.COLORMAP_BONE] * 10 * n_img,
-                    10,
-                    path_to_save=path_to_save,
-                )
-                # cv2.waitKey(2)
+                y_pos = y[0].detach()
+                y_cos = y[1].detach()
+                y_sin = y[2].detach()
+                y_width = y[3].detach()
+
+                with torch.no_grad():
+                    imgs = []
+                    n_img = min(4, x[0].shape[0])
+                    for idx in range(n_img):
+
+                        q_img_gr, ang_img_gr, width_img_gr = post_process_output(
+                            y_pos[idx], y_cos[idx], y_sin[idx], y_width[idx]
+                        )
+
+                        q_img, ang_img, width_img = post_process_output(
+                            lossd["pred"]["pos"][idx].detach(),
+                            lossd["pred"]["cos"][idx].detach(),
+                            lossd["pred"]["sin"][idx].detach(),
+                            lossd["pred"]["width"][idx].detach(),
+                        )
+
+                        # draw_gt_image = draw_grasps_on_image(
+                        #     rgb_img=train_data.dataset.get_rgb(
+                        #         didx[idx], rot[idx], zoom[idx], normalise=False
+                        #     ),
+                        #     grasp_q_img=q_img,
+                        #     grasp_angle_img=ang_img,
+                        #     no_grasps=1,
+                        #     grasp_width_img=width_img,
+                        # )
+
+                        # print(draw_gt_image.shape)
+                        # print(x[0][idx,].numpy().squeeze()[[2, 1, 0], :, :].shape)
+
+                        # imgs.extend(
+                        #     [x[0][idx,].numpy().squeeze()[[2, 1, 0], :, :]]
+                        #     + [yi[idx,].numpy().squeeze() for yi in y]
+                        #     + [x[0][idx,].numpy().squeeze()[[2, 1, 0], :, :]]
+                        #     + [
+                        #         pc[idx,].detach().cpu().numpy().squeeze()
+                        #         for pc in lossd["pred"].values()
+                        #     ]
+                        # )
+
+                        path_to_save = os.path.join(
+                            dir_vis,
+                            "train_vis_epoch_{}_batch_{}_{}".format(
+                                epoch, batch_idx, idx
+                            ),
+                        )
+
+                        save_results_grasp(
+                            rgb_img=train_data.dataset.get_rgb(
+                                didx.numpy().tolist()[idx],
+                                rot.numpy().tolist()[idx],
+                                zoom.numpy().tolist()[idx],
+                                normalise=False,
+                            ),
+                            grasp_q_img=q_img,
+                            grasp_angle_img=ang_img,
+                            grasp_width_img=width_img,
+                            gr_grasp_q_img=q_img_gr,
+                            gr_grasp_angle_img=ang_img_gr,
+                            gr_grasp_width_img=width_img_gr,
+                            no_grasps=1,
+                            prompt=train_data.dataset.get_prompt(
+                                didx.numpy().tolist()[idx]
+                            ),
+                            result_dir=path_to_save,
+                        )
+
+                    # gridshow(
+                    #     "Display",
+                    #     imgs,
+                    #     [
+                    #         (xc[0].min().item(), xc[0].max().item()),
+                    #         (0.0, 1.0),
+                    #         (0.0, 1.0),
+                    #         (-1.0, 1.0),
+                    #         (0.0, 1.0),
+                    #     ]
+                    #     * 2
+                    #     * n_img,
+                    #     [cv2.COLORMAP_BONE] * 10 * n_img,
+                    #     10,
+                    #     path_to_save=path_to_save,
+                    # )
+
+                    # cv2.waitKey(2)
 
     results["loss"] /= batch_idx
     for l in results["losses"]:
@@ -296,7 +363,7 @@ def run():
     args = parse_args()
 
     # Set-up output directories
-    dt = datetime.datetime.now().strftime("%y%m%d_%H%M")
+    dt = datetime.datetime.now().strftime("%y%m%d_%H%M%S")
     net_desc = "{}_{}".format(dt, "_".join(args.description.split()))
 
     save_folder = os.path.join(args.logdir, net_desc)
@@ -336,17 +403,44 @@ def run():
     # Load Dataset
     logging.info("Loading {} Dataset...".format(args.dataset.title()))
     Dataset = get_dataset(args.dataset)
-    dataset = Dataset(
-        args.dataset_path,
-        output_size=args.input_size,
-        ds_rotate=args.ds_rotate,
-        random_rotate=True,
-        random_zoom=True,
-        include_depth=args.use_depth,
-        include_rgb=args.use_rgb,
-        include_embedding=args.use_instruction,
-        seen=args.seen,
-    )
+
+    # dataset = Dataset(
+    #     args.dataset_path,
+    #     output_size=args.input_size,
+    #     ds_rotate=args.ds_rotate,
+    #     random_rotate=True,
+    #     random_zoom=True,
+    #     include_depth=args.use_depth,
+    #     include_rgb=args.use_rgb,
+    #     include_embedding=args.use_instruction,
+    #     seen=args.seen,
+    # )
+
+    if args.ds_easy_setting:
+        dataset = Dataset(
+            args.dataset_path,
+            output_size=args.input_size,
+            ds_rotate=args.ds_rotate,
+            random_rotate=False,
+            random_zoom=False,
+            include_depth=args.use_depth,
+            include_rgb=args.use_rgb,
+            include_embedding=args.use_instruction,
+            seen=args.seen,
+        )
+    else:
+        dataset = Dataset(
+            args.dataset_path,
+            output_size=args.input_size,
+            ds_rotate=args.ds_rotate,
+            random_rotate=True,
+            random_zoom=True,
+            include_depth=args.use_depth,
+            include_rgb=args.use_rgb,
+            include_embedding=args.use_instruction,
+            seen=args.seen,
+        )
+
     logging.info("Dataset size is {}".format(dataset.length))
 
     # Creating data indices for training and validation splits
@@ -360,23 +454,47 @@ def run():
     logging.info("Validation size: {}".format(len(val_indices)))
 
     # Creating data samplers and loaders
-    train_sampler = torch.utils.data.sampler.SubsetRandomSampler(train_indices)
-    val_sampler = torch.utils.data.sampler.SubsetRandomSampler(val_indices)
+    if args.ds_easy_setting:
 
-    train_data = torch.utils.data.DataLoader(
-        dataset,
-        batch_size=args.batch_size,
-        num_workers=args.num_workers,
-        sampler=train_sampler,
-    )
-    val_data = torch.utils.data.DataLoader(
-        dataset, batch_size=1, num_workers=args.num_workers, sampler=val_sampler
-    )
+        train_data = torch.utils.data.DataLoader(
+            dataset,
+            batch_size=args.batch_size,
+            num_workers=args.num_workers,
+            sampler=torch.utils.data.SequentialSampler(train_indices),
+            shuffle=False,
+        )
+
+        val_data = torch.utils.data.DataLoader(
+            dataset,
+            batch_size=1,
+            num_workers=args.num_workers,
+            sampler=torch.utils.data.SequentialSampler(val_indices),
+            shuffle=False,
+        )
+    else:
+
+        train_sampler = torch.utils.data.sampler.SubsetRandomSampler(train_indices)
+        val_sampler = torch.utils.data.sampler.SubsetRandomSampler(val_indices)
+
+        train_data = torch.utils.data.DataLoader(
+            dataset,
+            batch_size=args.batch_size,
+            num_workers=args.num_workers,
+            sampler=train_sampler,
+        )
+        val_data = torch.utils.data.DataLoader(
+            dataset,
+            batch_size=1,
+            num_workers=args.num_workers,
+            sampler=val_sampler,
+        )
+
     logging.info("Done")
 
     # Load the network
-    logging.info("Loading Network...")
+    logging.info(f"Loading Network {args.network}...")
     input_channels = 1 * args.use_depth + 3 * args.use_rgb
+
     network = get_network(args.network)
     net = network(
         input_channels=input_channels,
@@ -390,6 +508,12 @@ def run():
     # )
 
     net = net.to(device)
+    # I want to print number of trainable parameter of net
+    logging.info(
+        "Number of trainable parameters: {}".format(
+            sum(p.numel() for p in net.parameters() if p.requires_grad)
+        )
+    )
 
     logging.info("Done")
 

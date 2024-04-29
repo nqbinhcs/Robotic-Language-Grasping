@@ -60,6 +60,9 @@ class GraspDatasetBase(torch.utils.data.Dataset):
 
     def get_text_embedding(self, idx):
         raise NotImplementedError()
+    
+    def get_prompt(self, idx):
+        raise NotImplementedError()
 
     def __getitem__(self, idx):
 

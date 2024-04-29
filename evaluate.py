@@ -1,6 +1,8 @@
 import argparse
 import logging
 import time
+import datetime
+import os
 
 import numpy as np
 import torch.utils.data
@@ -9,7 +11,8 @@ from hardware.device import get_device
 from inference.post_process import post_process_output
 from utils.data import get_dataset
 from utils.dataset_processing import evaluation, grasp
-from utils.visualisation.plot import save_results
+from utils.visualisation.plot import save_results, save_results_grasp
+
 
 logging.basicConfig(level=logging.INFO)
 
@@ -117,6 +120,7 @@ def parse_args():
 
 if __name__ == "__main__":
     args = parse_args()
+    current_time = datetime.datetime.now().strftime("%y%m%d_%H%M%S")
 
     # Get the compute device
     device = get_device(args.force_cpu)
@@ -146,7 +150,11 @@ if __name__ == "__main__":
     logging.info("Validation size: {}".format(len(val_indices)))
 
     test_data = torch.utils.data.DataLoader(
-        test_dataset, batch_size=1, num_workers=args.num_workers, sampler=val_sampler
+        test_dataset,
+        batch_size=1,
+        num_workers=args.num_workers,
+        sampler=val_sampler,
+        seed=2024,
     )
     logging.info("Done")
 
@@ -155,7 +163,7 @@ if __name__ == "__main__":
 
         # Load Network
         net = torch.load(network)
-        print(net)
+        # print(net)
 
         results = {"correct": 0, "failed": 0}
 
@@ -171,6 +179,8 @@ if __name__ == "__main__":
                 xc = x.to(device)
                 yc = [yi.to(device) for yi in y]
                 lossd = net.compute_loss(xc, yc)
+
+                q_img_gr, ang_img_gr, width_img_gr = post_process_output(*y)
 
                 q_img, ang_img, width_img = post_process_output(
                     lossd["pred"]["pos"],
@@ -203,14 +213,22 @@ if __name__ == "__main__":
                             f.write(g.to_jacquard(scale=1024 / 300) + "\n")
 
                 if args.vis:
-                    save_results(
+
+                    # create a name folder result with time
+                    result_folder = f"results/{current_time}/{didx.numpy().tolist()[0]}"
+                    save_results_grasp(
                         rgb_img=test_data.dataset.get_rgb(
                             didx, rot, zoom, normalise=False
                         ),
                         grasp_q_img=q_img,
                         grasp_angle_img=ang_img,
-                        no_grasps=args.n_grasps,
                         grasp_width_img=width_img,
+                        gr_grasp_q_img=q_img_gr,
+                        gr_grasp_angle_img=ang_img_gr,
+                        gr_grasp_width_img=width_img_gr,
+                        no_grasps=args.n_grasps,
+                        prompt=test_data.dataset.get_prompt(didx.numpy().tolist()[0]),
+                        result_dir=result_folder,
                     )
 
         avg_time = (time.time() - start_time) / len(test_data)

@@ -96,6 +96,11 @@ class GraspAnythingDataset(GraspDatasetBase):
             prompt = pickle.load(f)
         return self.text_embedder([prompt])
 
+    def get_prompt(self, idx):
+        with open(self.prompt_files[idx], "rb") as f:
+            prompt = pickle.load(f)
+        return prompt
+
     def _get_crop_attrs(self, idx):
         gtbbs = grasp.GraspRectangles.load_from_grasp_anything_file(
             self.grasp_files[idx]
@@ -110,6 +115,8 @@ class GraspAnythingDataset(GraspDatasetBase):
         gtbbs = grasp.GraspRectangles.load_from_grasp_anything_file(
             self.grasp_files[idx], scale=self.output_size / 416.0
         )
+
+        # print("gtbbs", gtbbs)
 
         c = self.output_size // 2
         gtbbs.rotate(rot, (c, c))
