@@ -204,6 +204,7 @@ def train(
     batches_per_epoch,
     vis=False,
     dir_vis=None,
+    ds_easy_setting=False
 ):
     """
     Run one training epoch
@@ -223,7 +224,9 @@ def train(
     batch_idx = 0
     # Use batches per epoch to make training on different sized datasets (cornell/jacquard) more equivalent.
 
-    # batches_per_epoch = len(train_data)
+    if ds_easy_setting:
+        batches_per_epoch = len(train_data)
+
 
     while batch_idx <= batches_per_epoch:
         for x, y, didx, rot, zoom in train_data:
@@ -503,7 +506,8 @@ def run():
         channel_size=args.channel_size,
     )
 
-    # net.load_state_dict(torch.load("weights/mobilevit_s.pt"), strict=False)
+    if args.network == 'trans_ragt':
+        net.load_state_dict(torch.load("weights/mobilevit_s.pt"), strict=False)
 
     net = net.to(device)
     # I want to print number of trainable parameter of net
@@ -542,6 +546,7 @@ def run():
             args.batches_per_epoch,
             vis=args.vis,
             dir_vis=vis_save_folder,
+            ds_easy_setting=args.ds_easy_setting
         )
 
         # Log training losses to tensorboard
