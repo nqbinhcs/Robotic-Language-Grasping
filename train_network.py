@@ -57,6 +57,12 @@ def parse_args():
         help="Dropout prob for training (0-1)",
     )
     parser.add_argument(
+        "--lr",
+        type=float,
+        default=1e-3,
+        help="Learning rate",
+    )
+    parser.add_argument(
         "--channel-size",
         type=int,
         default=32,
@@ -520,7 +526,7 @@ def run():
     logging.info("Done")
 
     if args.optim.lower() == "adam":
-        optimizer = optim.Adam(net.parameters())
+        optimizer = optim.Adam(net.parameters(), lr=args.lr)
     elif args.optim.lower() == "sgd":
         optimizer = optim.SGD(net.parameters(), lr=0.01, momentum=0.9)
     else:
