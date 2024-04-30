@@ -102,6 +102,9 @@ def parse_args():
     parser.add_argument("--num-workers", type=int, default=8, help="Dataset workers")
 
     # Training
+    parser.add_argument(
+        "--pretrained", action="store_true", default=False, help="Load from pretrained",
+    )
     parser.add_argument("--batch-size", type=int, default=8, help="Batch size")
     parser.add_argument("--epochs", type=int, default=50, help="Training epochs")
     parser.add_argument(
@@ -514,6 +517,9 @@ def run():
 
     if args.network == 'trans_ragt':
         net.load_state_dict(torch.load("weights/mobilevit_s.pt"), strict=False)
+    elif args.network == 'trans_grconvnet' and args.pretrained:
+        logging.info("Loading pretrained model...")
+        net.load_state_dict(torch.load("weights/model_grasp_anything_state.pth"), strict=False)
 
     net = net.to(device)
     # I want to print number of trainable parameter of net
