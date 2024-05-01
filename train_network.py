@@ -11,6 +11,7 @@ import tensorboardX
 import torch
 import torch.optim as optim
 import torch.utils.data
+import torch.optim.lr_scheduler as lr_scheduler
 from torchsummary import summary
 
 from hardware.device import get_device
@@ -546,7 +547,14 @@ def run():
     # sys.stdout = sys.__stdout__
     # f.close()
 
+    
+
     best_iou = 0.0
+    scheduler_step_size = 10  # Number of epochs after which to reduce the learning rate
+    scheduler_gamma = 0.1  # Factor by which to reduce the learning rate
+
+    scheduler = lr_scheduler.StepLR(optimizer, step_size=scheduler_step_size, gamma=scheduler_gamma)
+
     for epoch in range(args.epochs):
         logging.info("Beginning Epoch {:02d}".format(epoch))
         train_results = train(
@@ -599,6 +607,9 @@ def run():
                 net, os.path.join(save_folder, "epoch_%02d_iou_%0.2f" % (epoch, iou))
             )
             best_iou = iou
+
+        # Step the scheduler
+        scheduler.step()
 
 
 if __name__ == "__main__":
