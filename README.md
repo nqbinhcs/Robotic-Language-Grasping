@@ -1,6 +1,16 @@
 # Language-Driven Grasping
 This is the repository of work "TransGRNet: Generative Residual Convolutional Neural Network with
 Transformer for Language-Driven Grasping"
+
+
+<div align="center">
+
+![Our proposed Generative Residual Convolutional Neural Network with Transformer](assets/pipeline.svg)
+
+*Our proposed Generative Residual Convolutional Neural Network with Transformer*
+
+</div>
+
 ## Table of contents
    1. [Installation](#installation)
    1. [Datasets](#datasets)
