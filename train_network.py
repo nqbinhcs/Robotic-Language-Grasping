@@ -46,7 +46,7 @@ def parse_args():
         "--use-instruction",
         default=False,
         action="store_true",
-        help="Use instruction for training",
+        help="Use language instruction for training",
     )
     parser.add_argument(
         "--use-dropout", type=int, default=1, help="Use dropout for training (1/0)"
@@ -104,7 +104,10 @@ def parse_args():
 
     # Training
     parser.add_argument(
-        "--pretrained", action="store_true", default=False, help="Load from pretrained",
+        "--pretrained",
+        action="store_true",
+        default=False,
+        help="Load from pretrained",
     )
     parser.add_argument("--batch-size", type=int, default=8, help="Batch size")
     parser.add_argument("--epochs", type=int, default=50, help="Training epochs")
@@ -214,7 +217,7 @@ def train(
     batches_per_epoch,
     vis=False,
     dir_vis=None,
-    ds_easy_setting=False
+    ds_easy_setting=False,
 ):
     """
     Run one training epoch
@@ -236,7 +239,6 @@ def train(
 
     if ds_easy_setting:
         batches_per_epoch = len(train_data)
-
 
     while batch_idx <= batches_per_epoch:
         for x, y, didx, rot, zoom in train_data:
@@ -296,29 +298,6 @@ def train(
                             lossd["pred"]["width"][idx].detach(),
                         )
 
-                        # draw_gt_image = draw_grasps_on_image(
-                        #     rgb_img=train_data.dataset.get_rgb(
-                        #         didx[idx], rot[idx], zoom[idx], normalise=False
-                        #     ),
-                        #     grasp_q_img=q_img,
-                        #     grasp_angle_img=ang_img,
-                        #     no_grasps=1,
-                        #     grasp_width_img=width_img,
-                        # )
-
-                        # print(draw_gt_image.shape)
-                        # print(x[0][idx,].numpy().squeeze()[[2, 1, 0], :, :].shape)
-
-                        # imgs.extend(
-                        #     [x[0][idx,].numpy().squeeze()[[2, 1, 0], :, :]]
-                        #     + [yi[idx,].numpy().squeeze() for yi in y]
-                        #     + [x[0][idx,].numpy().squeeze()[[2, 1, 0], :, :]]
-                        #     + [
-                        #         pc[idx,].detach().cpu().numpy().squeeze()
-                        #         for pc in lossd["pred"].values()
-                        #     ]
-                        # )
-
                         path_to_save = os.path.join(
                             dir_vis,
                             "train_vis_epoch_{}_batch_{}_{}".format(
@@ -345,25 +324,6 @@ def train(
                             ),
                             result_dir=path_to_save,
                         )
-
-                    # gridshow(
-                    #     "Display",
-                    #     imgs,
-                    #     [
-                    #         (xc[0].min().item(), xc[0].max().item()),
-                    #         (0.0, 1.0),
-                    #         (0.0, 1.0),
-                    #         (-1.0, 1.0),
-                    #         (0.0, 1.0),
-                    #     ]
-                    #     * 2
-                    #     * n_img,
-                    #     [cv2.COLORMAP_BONE] * 10 * n_img,
-                    #     10,
-                    #     path_to_save=path_to_save,
-                    # )
-
-                    # cv2.waitKey(2)
 
     results["loss"] /= batch_idx
     for l in results["losses"]:
@@ -416,18 +376,6 @@ def run():
     # Load Dataset
     logging.info("Loading {} Dataset...".format(args.dataset.title()))
     Dataset = get_dataset(args.dataset)
-
-    # dataset = Dataset(
-    #     args.dataset_path,
-    #     output_size=args.input_size,
-    #     ds_rotate=args.ds_rotate,
-    #     random_rotate=True,
-    #     random_zoom=True,
-    #     include_depth=args.use_depth,
-    #     include_rgb=args.use_rgb,
-    #     include_embedding=args.use_instruction,
-    #     seen=args.seen,
-    # )
 
     if args.ds_easy_setting:
         dataset = Dataset(
@@ -516,16 +464,16 @@ def run():
         channel_size=args.channel_size,
     )
 
-    if args.network == 'trans_ragt':
-        net.load_state_dict(torch.load("weights/mobilevit_s.pt"), strict=False)
-    elif args.network == 'trans_grconvnet' and args.pretrained:
+    if args.network == "trans_grconvnet" and args.pretrained:
         logging.info("Loading pretrained model...")
-        net.load_state_dict(torch.load("weights/model_grasp_anything_state.pth"), strict=False)
+        net.load_state_dict(
+            torch.load("weights/pretrained_grasp_anything_state.pth"), strict=False
+        )
 
     net = net.to(device)
-    # I want to print number of trainable parameter of net
+
     logging.info(
-        "Number of trainable parameters: {}".format(
+        "Number of trainable parameters: {} params".format(
             sum(p.numel() for p in net.parameters() if p.requires_grad)
         )
     )
@@ -539,21 +487,13 @@ def run():
     else:
         raise NotImplementedError("Optimizer {} is not implemented".format(args.optim))
 
-    # Print model architecture.
-    # summary(net, (input_channels, args.input_size, args.input_size))
-    # f = open(os.path.join(save_folder, 'arch.txt'), 'w')
-    # sys.stdout = f
-    # summary(net, (input_channels, args.input_size, args.input_size))
-    # sys.stdout = sys.__stdout__
-    # f.close()
-
-    
-
     best_iou = 0.0
-    scheduler_step_size = 10  # Number of epochs after which to reduce the learning rate
-    scheduler_gamma = 0.1  # Factor by which to reduce the learning rate
+    scheduler_step_size = 10
+    scheduler_gamma = 0.1
 
-    scheduler = lr_scheduler.StepLR(optimizer, step_size=scheduler_step_size, gamma=scheduler_gamma)
+    scheduler = lr_scheduler.StepLR(
+        optimizer, step_size=scheduler_step_size, gamma=scheduler_gamma
+    )
 
     for epoch in range(args.epochs):
         logging.info("Beginning Epoch {:02d}".format(epoch))
@@ -566,7 +506,7 @@ def run():
             args.batches_per_epoch,
             vis=args.vis,
             dir_vis=vis_save_folder,
-            ds_easy_setting=args.ds_easy_setting
+            ds_easy_setting=args.ds_easy_setting,
         )
 
         # Log training losses to tensorboard

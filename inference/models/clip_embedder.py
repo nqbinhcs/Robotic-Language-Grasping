@@ -64,8 +64,6 @@ class CLIPTextEmbedder(nn.Module):
             tokens = batch_encoding["input_ids"].to(self.device)
             feature = self.transformer(input_ids=tokens).last_hidden_state
 
-        # [TASK]: normalize
-
         return feature[0]
 
 

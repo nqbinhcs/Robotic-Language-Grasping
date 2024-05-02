@@ -131,12 +131,4 @@ class GenerativeResnet(GraspModel):
             sin_output = self.sin_output(x)
             width_output = self.width_output(x)
 
-        # print(
-        #     "SHAPE FORWARD",
-        #     pos_output.shape,
-        #     cos_output.shape,
-        #     sin_output.shape,
-        #     width_output.shape,
-        # )
-
         return pos_output, cos_output, sin_output, width_output

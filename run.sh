@@ -1,7 +1,12 @@
 
 # conda activate grasp-anything
 
-python train_network.py --dataset grasp-anything --dataset-path train_data/grasp-anything/seen --network trans_ragt --use-instruction --use-depth 0 --batch-size 32 --vis 
+# python train_network.py --dataset grasp-anything --dataset-path train_data/grasp-anything/seen --network trans_ragt --use-instruction --use-depth 0 --batch-size 32 --vis 
+
+
+# python train_network.py --dataset grasp-anything --dataset-path train_data/grasp-anything/seen --network trans_grconvnet --use-instruction --use-depth 0 --batch-size 4 --vis --lr 0.0001 --dropout-prob 0.3 --pretrained
+
+python evaluate.py --network weights/best_trans_grconvnet --dataset grasp-anything --dataset-path train_data/grasp-anything/unseen --iou-eval --use-depth 0  --n-grasps 1 --use-instruction 
 
 # python train_network.py --dataset grasp-anything --dataset-path train_data/grasp-anything/seen --use-depth 0 --batch-size 4 --vis
 

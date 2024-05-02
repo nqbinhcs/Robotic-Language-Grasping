@@ -150,11 +150,7 @@ if __name__ == "__main__":
     logging.info("Validation size: {}".format(len(val_indices)))
 
     test_data = torch.utils.data.DataLoader(
-        test_dataset,
-        batch_size=1,
-        num_workers=args.num_workers,
-        sampler=val_sampler,
-        seed=2024,
+        test_dataset, batch_size=1, num_workers=args.num_workers, sampler=val_sampler
     )
     logging.info("Done")
 
@@ -176,7 +172,12 @@ if __name__ == "__main__":
 
         with torch.no_grad():
             for idx, (x, y, didx, rot, zoom) in enumerate(test_data):
-                xc = x.to(device)
+
+                if not isinstance(x, list):
+                    xc = x.to(device)
+                else:
+                    xc = (x[0].to(device), x[1].to(device))
+
                 yc = [yi.to(device) for yi in y]
                 lossd = net.compute_loss(xc, yc)
 
