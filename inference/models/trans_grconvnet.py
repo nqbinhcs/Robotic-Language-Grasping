@@ -99,7 +99,9 @@ class GenerativeResnet(GraspModel):
             if isinstance(m, (nn.Conv2d, nn.ConvTranspose2d)):
                 nn.init.xavier_uniform_(m.weight, gain=1)
 
-    def forward(self, x_in, cond):
+    def forward(self, x_in):
+
+        x_in, cond = x_in[0], x_in[1]
 
         x = F.relu(self.bn1(self.conv1(x_in)))
         x = F.relu(self.bn2(self.conv2(x)))
@@ -128,5 +130,13 @@ class GenerativeResnet(GraspModel):
             cos_output = self.cos_output(x)
             sin_output = self.sin_output(x)
             width_output = self.width_output(x)
+
+        # print(
+        #     "SHAPE FORWARD",
+        #     pos_output.shape,
+        #     cos_output.shape,
+        #     sin_output.shape,
+        #     width_output.shape,
+        # )
 
         return pos_output, cos_output, sin_output, width_output

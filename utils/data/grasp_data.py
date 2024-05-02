@@ -18,6 +18,7 @@ class GraspDatasetBase(torch.utils.data.Dataset):
         random_rotate=False,
         random_zoom=False,
         input_only=False,
+        include_embedding=False,
         seen=True,
     ):
         """
@@ -34,6 +35,7 @@ class GraspDatasetBase(torch.utils.data.Dataset):
         self.input_only = input_only
         self.include_depth = include_depth
         self.include_rgb = include_rgb
+        self.include_embedding = include_embedding
 
         self.grasp_files = []
 
@@ -58,11 +60,11 @@ class GraspDatasetBase(torch.utils.data.Dataset):
 
     def get_text_embedding(self, idx):
         raise NotImplementedError()
+    
+    def get_prompt(self, idx):
+        raise NotImplementedError()
 
     def __getitem__(self, idx):
-
-        # load the text embedding
-        text_embedding = self.get_text_embedding(idx)
 
         if self.random_rotate:
             rotations = [0, np.pi / 2, 2 * np.pi / 2, 3 * np.pi / 2]
@@ -105,13 +107,19 @@ class GraspDatasetBase(torch.utils.data.Dataset):
         sin = self.numpy_to_torch(np.sin(2 * ang_img))
         width = self.numpy_to_torch(width_img)
 
-        return (
-            (x, text_embedding),
-            (pos, cos, sin, width),
-            idx,
-            rot,
-            zoom_factor,
-        )
+        if self.include_embedding:
+            text_embedding = self.get_text_embedding(idx)
+            x_with_cond = (x, text_embedding)
+
+            return (
+                x_with_cond,
+                (pos, cos, sin, width),
+                idx,
+                rot,
+                zoom_factor,
+            )
+
+        return (x, (pos, cos, sin, width), idx, rot, zoom_factor)
 
     def __len__(self):
         return len(self.grasp_files)

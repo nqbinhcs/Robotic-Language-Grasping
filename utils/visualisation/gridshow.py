@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 
-def gridshow(name, imgs, scales, cmaps, width, border=10):
+def gridshow(name, imgs, scales, cmaps, width, border=10, path_to_save=None):
     """
     Display images in a grid.
     :param name: cv2 Window Name to update
@@ -11,6 +11,7 @@ def gridshow(name, imgs, scales, cmaps, width, border=10):
     :param cmaps: List of cv2 Colormaps to apply
     :param width: Number of images in a row
     :param border: Border (pixels) between images.
+    :param path_to_save: Path to save the image
     """
     imgrows = []
     imgcols = []
@@ -56,5 +57,11 @@ def gridshow(name, imgs, scales, cmaps, width, border=10):
 
     maxw = max([c.shape[1] for c in imgrows])
 
-    cv2.imshow(name, np.vstack(
-        [np.pad(r, ((border // 2, border // 2), (0, maxw - r.shape[1]), (0, 0)), mode='constant') for r in imgrows]))
+    if path_to_save is not None:
+        # Save the image to the specified path
+        cv2.imwrite(path_to_save, np.vstack(
+            [np.pad(r, ((border // 2, border // 2), (0, maxw - r.shape[1]), (0, 0)), mode='constant') for r in imgrows]))
+    else:
+        # Display the image using cv2.imshow
+        cv2.imshow(name, np.vstack(
+            [np.pad(r, ((border // 2, border // 2), (0, maxw - r.shape[1]), (0, 0)), mode='constant') for r in imgrows]))

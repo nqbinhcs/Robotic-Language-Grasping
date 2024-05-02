@@ -62,39 +62,49 @@ class GraspAnythingDataset(GraspDatasetBase):
                 + self.grasp_files[: int(self.length * ds_rotate)]
             )
 
-        # self.text_embeddings = self.prepare_text_embedding()
-        self.text_embedder = CLIPTextEmbedder(device="cpu")
+        self.text_embeddings = self.prepare_text_embedding()
+        print(f"{len(self.text_embeddings)} text embeddings are prepared")
+        # self.text_embedder = CLIPTextEmbedder(device="cpu")
 
-    # def prepare_text_embedding(self, batch_size=16):
-    #     cache_file = "text_embeddings_cache.pkl"
+    def prepare_text_embedding(self, batch_size=1):
+        cache_file = "text_embeddings_cache.pkl"
 
-    #     if os.path.exists(cache_file):
-    #         with open(cache_file, "rb") as f:
-    #             text_embeddings = pickle.load(f)
-    #     else:
-    #         text_embedder = CLIPTextEmbedder()
-    #         text_embeddings = []
-    #         num_prompts = len(self.prompt_files)
-    #         for i in tqdm(range(0, num_prompts, batch_size)):
-    #             batch_prompts = []
-    #             for j in range(i, min(i + batch_size, num_prompts)):
-    #                 with open(self.prompt_files[j], "rb") as f:
-    #                     prompt = pickle.load(f)
-    #                 batch_prompts.append(prompt)
+        if os.path.exists(cache_file):
+            with open(cache_file, "rb") as f:
+                text_embeddings = pickle.load(f)
+        else:
+            text_embedder = CLIPTextEmbedder(device='cuda')
+            text_embeddings = []
+            num_prompts = len(self.prompt_files)
+            for i in tqdm(range(0, num_prompts, batch_size)):
+                batch_prompts = []
+                for j in range(i, min(i + batch_size, num_prompts)):
+                    with open(self.prompt_files[j], "rb") as f:
+                        prompt = pickle.load(f)
+                    batch_prompts.append(prompt)
 
-    #             text_embeddings.extend(text_embedder(batch_prompts))
+                ext_embeddings = text_embedder(batch_prompts).to('cpu')
+                text_embeddings.append(ext_embeddings)
 
-    #         del text_embedder
+            # del text_embedder
 
-    #         with open(cache_file, "wb") as f:
-    #             pickle.dump(text_embeddings, f)
+            # with open(cache_file, "wb") as f:
+            #     pickle.dump(text_embeddings, f)
 
-    #     return text_embeddings
+        return text_embeddings
+
+    # def get_text_embedding(self, idx):
+    #     with open(self.prompt_files[idx], "rb") as f:
+    #         prompt = pickle.load(f)
+    #     return self.text_embedder([prompt])
 
     def get_text_embedding(self, idx):
+        return self.text_embeddings[idx]
+
+    def get_prompt(self, idx):
         with open(self.prompt_files[idx], "rb") as f:
             prompt = pickle.load(f)
-        return self.text_embedder([prompt])
+        return prompt
 
     def _get_crop_attrs(self, idx):
         gtbbs = grasp.GraspRectangles.load_from_grasp_anything_file(
@@ -110,6 +120,8 @@ class GraspAnythingDataset(GraspDatasetBase):
         gtbbs = grasp.GraspRectangles.load_from_grasp_anything_file(
             self.grasp_files[idx], scale=self.output_size / 416.0
         )
+
+        # print("gtbbs", gtbbs)
 
         c = self.output_size // 2
         gtbbs.rotate(rot, (c, c))
